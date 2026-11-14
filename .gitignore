@@ -11,3 +11,4 @@ rom/*/build/
 harbor/canyon-racer-task/environment/mcp-server/game/
 harbor/canyon-racer-task/tests/game/
 runs/
+jobs/
