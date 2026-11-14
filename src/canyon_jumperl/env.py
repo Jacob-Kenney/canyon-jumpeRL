@@ -59,17 +59,20 @@ CANYON_SAMPLE_Y = np.arange(0, 160, 16)  # y rows at which the canyon left edge 
 SCREEN_H, SCREEN_W = 144, 160
 BOX_PRESS_THRESHOLD = 0.5  # action_mode="box": button pressed when value > this
 
-# observation_mode="box": flat float32 vector layout
-OBS_DIM = 4 + 1 + len(CANYON_SAMPLE_Y) + 1 + 1 + 1 + 1 + OBSTACLES_COUNT * 5  # = 44
+# observation_mode="box": flat float32 feature vector (engineered, see docs/ENV.md). Fixed scales, no clipping, so values
+# outside the usual range stay valid. Dropped vs the raw state: level, speed, score, lives, obstacle rows 3-5, ship_state.
+POS_SCALE = 100.0      # pixel positions / distances are divided by this
+VZ_SCALE = 3.0         # jump velocity (px/frame, about -2..3) is divided by this
+OBSTACLES_IN_OBS = 2   # nearest obstacles in the feature vector (the game never showed more than 2 at once)
+OBSTACLE_FEATURES = 1 + 5 + 3  # present, one-hot type (L, R, mid, full, +1 item), dx_left, dx_right, dy
+OBS_DIM = 4 + 1 + len(CANYON_SAMPLE_Y) + OBSTACLES_IN_OBS * OBSTACLE_FEATURES  # = 33
 OBS_LAYOUT = {
-    "ship": slice(0, 4),            # x, y, z (px), jump velocity (px/frame)
-    "ship_state": 4,                # 0 ground, 1 jump, 2 crashing, 3 crash ended
-    "canyon_left": slice(5, 15),    # left wall x at y = 0,16,..,144
-    "lives": 15,
-    "score": 16,
-    "level": 17,
-    "speed": 18,                    # obstacle speed px/frame
-    "obstacles": slice(19, 44),     # 5 rows x 5 cols, nearest first: present, type, hit_x_left, hit_x_right, y
+    "ship": slice(0, 4),            # x/100, y/100, z/100, vz/3
+    "crashing": 4,                  # 1 while the ship is crashing / waiting for the rewind (buttons do nothing), else 0
+    "canyon_left_rel": slice(5, 15),  # (left wall x at y = 0,16,..,144 - ship x) / 100
+    # 2 rows x 9, nearest first: present, one-hot type [L, R, mid, full, +1 item], (hit_x_left - ship_x)/100,
+    # (hit_x_right - ship_x)/100, (ship_y - obstacle_y)/100 (positive while the obstacle is still ahead of the ship)
+    "obstacles": slice(15, 33),
 }
 
 _SNAPSHOT_CACHE: dict[tuple, bytes] = {}
@@ -92,7 +95,7 @@ class CanyonRacerEnv(gym.Env):
     def __init__(
         self,
         rom_path: str | os.PathLike | None = None,
-        observation_mode: str = "box",        # "box" (flat vector, default) | "state" (Dict) | "pixels" | "both"
+        observation_mode: str = "box",        # "box" (engineered feature vector, default) | "state" (Dict) | "pixels" | "both"
         action_mode: str = "box",             # "box" (8 floats in [0,1], pressed if > 0.5) | "discrete" | "multibinary"
         allow_save_button: bool = False,      # include B in the discrete action table
         action_offset: int = 0,               # latency: a step's buttons take effect this many frames later
@@ -154,11 +157,7 @@ class CanyonRacerEnv(gym.Env):
         })
         pix = spaces.Box(0, 255, (SCREEN_H, SCREEN_W, 3), np.uint8)
         if observation_mode == "box":
-            lo = np.concatenate([np.full(4, -256.0), [0.0], np.zeros(len(CANYON_SAMPLE_Y)), [0.0, 0.0, 0.0, 0.0],
-                                 np.zeros(OBSTACLES_COUNT * 5)])
-            hi = np.concatenate([np.full(4, 256.0), [3.0], np.full(len(CANYON_SAMPLE_Y), 255.0), [99.0, 99999.0, 255.0, 256.0],
-                                 np.full(OBSTACLES_COUNT * 5, 255.0)])
-            self.observation_space = spaces.Box(lo.astype(np.float32), hi.astype(np.float32), (OBS_DIM,), np.float32)
+            self.observation_space = spaces.Box(-np.inf, np.inf, (OBS_DIM,), np.float32)  # engineered, unbounded
         elif observation_mode == "state":
             self.observation_space = state_space
         elif observation_mode == "pixels":
@@ -292,11 +291,17 @@ class CanyonRacerEnv(gym.Env):
 
     @staticmethod
     def flatten_state(s: dict[str, Any]) -> np.ndarray:
-        """Dict state -> flat float32 vector, layout in OBS_LAYOUT."""
-        return np.concatenate([
-            s["ship"], [float(s["ship_state"])], s["canyon_left"], [float(s["lives"])],
-            s["score"], [float(s["level"])], s["speed"], s["obstacles"].reshape(-1),
-        ]).astype(np.float32)
+        """Dict state -> engineered float32 feature vector, layout in OBS_LAYOUT."""
+        x, y, z, vz = (float(v) for v in s["ship"])
+        f = [x / POS_SCALE, y / POS_SCALE, z / POS_SCALE, vz / VZ_SCALE, float(int(s["ship_state"]) in SHIP_CRASHING)]
+        f += [(float(c) - x) / POS_SCALE for c in s["canyon_left"]]
+        for present, typ, xl, xr, oy in s["obstacles"][:OBSTACLES_IN_OBS]:
+            if present:
+                onehot = [1.0 if int(typ) == k else 0.0 for k in range(5)]
+                f += [1.0, *onehot, (float(xl) - x) / POS_SCALE, (float(xr) - x) / POS_SCALE, (y - float(oy)) / POS_SCALE]
+            else:
+                f += [0.0] * OBSTACLE_FEATURES
+        return np.array(f, np.float32)
 
     def _observe(self, raw):
         if self.observation_mode == "pixels":

@@ -8,10 +8,13 @@ Crashing costs a life (the game rewinds to the last save point, score included);
 Tools: `reset(seed)` (seed is fixed server-side) and `step(action)`. `action` is a list of 8 floats in [0,1]
 `[RIGHT, LEFT, UP, DOWN, A, B, SELECT, START]`; a button is pressed when its value is > 0.5 (jump = A, so
 `[0,0,0,0,1,0,0,0]`). Each step holds the buttons for 4 frames and returns `{observation, terminated, info}`.
-`observation` is a flat float32 vector of length 44: `ship` [0:4] = x, y, z, vz; `ship_state` [4] (0 ground, 1 jump,
-2 crashing, 3 crash ended); `canyon_left` [5:15]; `lives` [15]; `score` [16]; `level` [17]; `speed` [18]; `obstacles`
-[19:44] = 5 rows x [present, type (0 left, 1 right, 2 middle, 3 full width, 4 +1 life item), hit_x_left,
-hit_x_right, y], nearest first. Arrays are encoded as `{dtype, shape, data}`. Hint: jumping (A) clears obstacles; timing matters. Writing a script that
+`observation` is a flat float32 feature vector of length 33 (positions are scaled by 1/100, not clipped):
+`ship` [0:4] = x/100, y/100, z/100, vz/3 (the ship is jumping when z > 0); `crashing` [4] = 1 while the ship is crashing
+(buttons do nothing until the game rewinds), else 0; `canyon_left_rel` [5:15] = (left canyon wall x at y = 0,16,..,144
+minus ship x)/100; `obstacles` [15:33] = the 2 nearest obstacles, 9 values each: present, one-hot type
+[left, right, middle, full width, +1 life item], (hit_x_left - ship_x)/100, (hit_x_right - ship_x)/100,
+(ship_y - obstacle_y)/100 (positive while the obstacle is still ahead of the ship); all 0 if absent. Score and lives are in
+`info`. Arrays are encoded as `{dtype, shape, data}`. Hint: jumping (A) clears obstacles; timing matters. Writing a script that
 uses the `mcp` Python package (installed) to loop over `step` is far cheaper than calling tools by hand.
 
 **Budget:** at most 1500 `step` calls in total (the server refuses more). Call `reset` once at the start; extra resets are

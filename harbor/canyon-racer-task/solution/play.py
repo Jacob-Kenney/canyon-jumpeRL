@@ -10,9 +10,9 @@ except ImportError:
 URL = os.environ.get("MCP_URL", "http://mcp-server:8000/mcp")
 TH, HOLD = int(os.environ.get("TH", 30)), int(os.environ.get("HOLD", 2))
 STEPS = int(os.environ.get("STEPS", 1500))
-# observation vector layout (shape [44]): ship [0:4]=x,y,z,vz; ship_state [4]; obstacles [19:44] = 5 rows x
-# [present, type, hit_x_left, hit_x_right, y]
-SHIP, SHIP_STATE, OBST = slice(0, 4), 4, slice(19, 44)
+# observation vector layout (shape [33], positions /100): ship [0:4]=x,y,z,vz; crashing [4]; canyon_left_rel [5:15];
+# obstacles [15:33] = 2 rows x [present, one-hot type x5 (4 = +1 item), dx_left, dx_right, dy = (ship_y - obstacle_y)]
+Z, CRASHING, OBST = 2, 4, slice(15, 33)
 NOOP = [0.0] * 8
 JUMP = [0, 0, 0, 0, 1, 0, 0, 0]  # A: [RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]
 
@@ -31,10 +31,10 @@ class Policy:
     def __call__(self, obs):
         if self.hold > 0:
             self.hold -= 1; return JUMP
-        if int(obs[SHIP_STATE]) == 0:
-            y = float(obs[SHIP][1])
-            for o in obs[OBST].reshape(5, 5):
-                if o[0] and o[1] != 4 and y - TH - 8 <= o[4] <= y - TH:
+        if obs[Z] < 1e-6 and obs[CRASHING] == 0:  # on the ground, not crashing
+            for o in obs[OBST].reshape(2, 9):
+                dy = float(o[8]) * 100  # ship_y - obstacle_y in pixels; same window as before: TH <= dy <= TH + 8
+                if o[0] and o[5] == 0 and TH - 1e-3 <= dy <= TH + 8 + 1e-3:
                     self.hold = HOLD - 1; return JUMP
         return NOOP
 

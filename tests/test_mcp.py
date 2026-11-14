@@ -11,6 +11,7 @@ from mcp.client.session import ClientSession
 from mcp.client.stdio import stdio_client
 
 import canyon_jumperl  # noqa: F401
+from canyon_jumperl.env import OBS_DIM
 from canyon_jumperl.mcp_server import decode
 
 STEPS = 200
@@ -34,7 +35,7 @@ def _wire(a):
 
 def _eq_obs(a, b):
     x, y = np.asarray(a), np.asarray(b)
-    assert x.dtype == y.dtype == np.float32 and x.shape == y.shape == (44,)
+    assert x.dtype == y.dtype == np.float32 and x.shape == y.shape == (OBS_DIM,)
     np.testing.assert_array_equal(x, y)  # bit-for-bit
 
 

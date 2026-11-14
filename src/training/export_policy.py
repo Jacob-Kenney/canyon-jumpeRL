@@ -25,7 +25,7 @@ if __name__ == "__main__":
          "wp": s["pi.net.mlp.0.weight"], "bp": s["pi.net.mlp.0.bias"]}
     # sanity check against the real module
     import torch
-    obs = np.random.default_rng(0).uniform(0, 100, 44).astype(np.float32)
+    obs = np.random.default_rng(0).uniform(-1, 1, w["w0"].shape[1]).astype(np.float32)
     with torch.no_grad():
         ref = m.forward_inference({"obs": torch.as_tensor(obs)[None]})["action_dist_inputs"][0].numpy()[:8]
     assert np.allclose(ref, numpy_forward(w, obs), atol=1e-3), (ref, numpy_forward(w, obs))

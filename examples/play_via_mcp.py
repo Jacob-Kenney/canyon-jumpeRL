@@ -2,7 +2,7 @@
 
     python examples/play_via_mcp.py [--rom PATH]
 
-The server only provides the game: observation (same Box(44) vector as gym.make("CanyonRacer-v0")), `terminated`
+The server only provides the game: observation (same Box(33) feature vector as gym.make("CanyonRacer-v0")), `terminated`
 (= game over) and game facts in `info`.  Reward shaping, truncation and step budgets live HERE, on the
 client/training side, computed from obs/info.
 """
@@ -22,10 +22,10 @@ MAX_STEPS = 300  # client-side truncation (training-file concern)
 
 def policy(obs) -> list[float]:
     """Any callable obs -> 8 button floats in BUTTON_ORDER. Swap in your trained network."""
-    ship_x, ship_y, ship_z, _ = obs[OBS_LAYOUT["ship"]]
-    ahead = obs[OBS_LAYOUT["obstacles"]].reshape(5, 5)[0]  # [present, type, hit_x_left, hit_x_right, y]
+    ahead = obs[OBS_LAYOUT["obstacles"]].reshape(2, 9)[0]  # present, one-hot type x5, dx_left, dx_right, dy (all relative to the ship, /100)
+    dx_left, dx_right, dy = ahead[6] * 100, ahead[7] * 100, ahead[8] * 100
     action = [0.0] * 8
-    if ahead[0] and ahead[4] > ship_y - 40 and ahead[2] - 8 <= ship_x <= ahead[3]:
+    if ahead[0] and ahead[5] == 0 and 0 < dy < 40 and dx_left - 8 <= 0 <= dx_right:  # ahead[5] = +1 item
         action[BUTTON_ORDER.index("a")] = 1.0  # jump
     return action
 

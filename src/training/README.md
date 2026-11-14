@@ -1,6 +1,6 @@
 # src/training
 
-`ppo.py`: RLlib PPO on `CanyonRacerEnv` (Box(44) observation, Box(8) action), default hyperparameters.
+`ppo.py`: RLlib PPO on `CanyonRacerEnv` (Box(33) feature-vector observation, Box(8) action), default hyperparameters.
 
 ```bash
 uv run python src/training/ppo.py --iters 100 --env-runners 2 --out runs/ppo

@@ -28,7 +28,7 @@ uv sync
 ```python
 import gymnasium as gym, canyon_jumperl
 
-env = gym.make("CanyonRacer-v0")        # Box(44) observation, Box(8) action
+env = gym.make("CanyonRacer-v0")        # Box(33) feature vector observation, Box(8) action
 obs, info = env.reset(seed=0)
 terminated = truncated = False
 while not (terminated or truncated):

@@ -1,7 +1,7 @@
 # Canyon Racer environment
 
 `gym.make("CanyonRacer-v0")` -> `canyon_jumperl.env.CanyonRacerEnv` (PyBoy headless, state read from emulator RAM).
-Defaults are `observation_mode="box"` (flat `Box(44)`) and `action_mode="box"` (`Box(8)`). The `"state"` Dict, `"pixels"`, `"discrete"` and
+Defaults are `observation_mode="box"` (engineered `Box(33)` feature vector) and `action_mode="box"` (`Box(8)`). The `"state"` Dict, `"pixels"`, `"discrete"` and
 `"multibinary"` modes are options. The tables below describe the Dict/discrete modes. The Box layout is in the last section.
 ROM: `roms/canyon_racer_0.7.7_mbc5_rumble.gb` (+ `.noi`/`.cdb` next to it; override with `rom_path=` or `$CANYON_RACER_ROM`).
 
@@ -107,13 +107,23 @@ No training code is included.
 `CanyonRacer-v0` now defaults to Box spaces (`observation_mode="box"`, `action_mode="box"`); the older `"state"` (Dict),
 `"pixels"`, `"both"`, `"discrete"` and `"multibinary"` modes remain available as options.
 
-* **Observation:** `Box(float32, (44,))`. Layout (`canyon_jumperl.env.OBS_LAYOUT`): `ship` [0:4] = x, y, z, vz;
-  `ship_state` [4]; `canyon_left` [5:15]; `lives` [15]; `score` [16]; `level` [17]; `speed` [18]; `obstacles` [19:44]
-  = 5 rows x [present, type, hit_x_left, hit_x_right, y], nearest first. Bounds are in `observation_space`.
+* **Observation:** `Box(-inf, inf, (33,), float32)`, an engineered feature vector built from the dict state by
+  `CanyonRacerEnv.flatten_state`. Layout (`canyon_jumperl.env.OBS_LAYOUT`):
+  * `ship` [0:4] = x/100, y/100, z/100, vz/3
+  * `crashing` [4] = 1 while the ship is crashing or waiting for the rewind (buttons do nothing), else 0. Jumping is `z > 0`.
+  * `canyon_left_rel` [5:15] = (left wall x at y = 0,16,..,144 minus ship x) / 100
+  * `obstacles` [15:33] = the 2 nearest obstacles, 9 values each: present, one-hot type [left, right, middle, full width, +1 item],
+    (hit_x_left - ship_x)/100, (hit_x_right - ship_x)/100, (ship_y - obstacle_y)/100 (positive while the obstacle is still ahead).
+    All 9 values are 0 when absent.
+
+  Scales are fixed constants (`POS_SCALE`, `VZ_SCALE`) and nothing is clipped, so values outside the usual range stay valid.
+  Dropped compared to the raw state: `level`, `speed` (constant 2.0 in all measured play), `score`, `lives`, `ship_state` (jumping is `z > 0`),
+  and obstacle rows 3-5 (never more than 2 obstacles at once in ~19k measured steps; only levels 0-2 were reached). `score`, `lives` and
+  `level` are still in `info`, and the `"state"` Dict mode still has everything.
 * **Action:** `Box(0, 1, (8,), float32)` in `BUTTON_ORDER` = RIGHT, LEFT, UP, DOWN, A, B, SELECT, START. A button is
   pressed when its value is > 0.5 (`BOX_PRESS_THRESHOLD`). B costs a life and START pauses, so a policy can hurt itself.
 * **`action_offset=k` (frames, default 0):** latency simulation. The buttons chosen at a step reach the emulator k frames
   later (a FIFO fed one entry per frame); for the first k frames after a reset no buttons are pressed. The game samples
   input on its own frame phase, so the visible reaction can lag one frame more than k.
-* The MCP server serves these defaults: `step(action)` takes the 8 floats and returns the 44-vector observation.
+* The MCP server serves these defaults: `step(action)` takes the 8 floats and returns the 33-vector observation.
   It has no offset flag; on real hardware the latency is physical.

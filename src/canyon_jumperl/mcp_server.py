@@ -211,8 +211,11 @@ def build_server(backend: GameBackend, **server_kwargs) -> MCPServer:
         "Press buttons for 4 frames and return the result. `action` = list of 8 floats in [0,1] "
         "[RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]; a button is pressed when its value is > 0.5 (e.g. jump = A). "
         "Returns {observation, terminated (true when the game is over), info (lives, score, level, ship_state, "
-        "paused, game_over, game_state, frames)}. `observation` is a flat float32 vector (shape [44]) with layout "
-        f"{layout}; obstacles are 5 rows x [present, type, hit_x_left, hit_x_right, y], nearest first. "
+        "paused, game_over, game_state, frames)}. `observation` is a flat float32 feature vector (shape [33]) with layout "
+        f"{layout}. ship = x/100, y/100, z/100, vz/3; crashing = 1 while the ship is crashing (buttons do nothing); "
+        "canyon_left_rel = (left wall x at y=0,16,..,144 - ship x)/100; obstacles = 2 nearest, 9 values each: present, "
+        "one-hot type [left, right, middle, full width, +1 life item], (hit_x_left - ship_x)/100, (hit_x_right - ship_x)/100, "
+        "(ship_y - obstacle_y)/100 (positive while the obstacle is still ahead of the ship); all zeros if absent. "
         "No reward or truncation: compute those yourself."
     )
 
