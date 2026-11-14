@@ -102,6 +102,7 @@ class CanyonRacerEnv(gym.Env):
         crash_penalty: float = 1.0,           # applied once when the ship starts crashing
         life_loss_penalty: float = 0.5,       # per life lost (crash rewind or B save)
         life_gain_bonus: float = 1.0,         # per +1 item collected
+        score_reward_scale: float = 0.1,      # reward per game-score point (0.1 = +1 per obstacle, 1.0 = reward is the game score)
         game_over_penalty: float = 1.0,
         settle_frames: int = 60,              # frames run after gameplay start before the snapshot
     ):
@@ -124,6 +125,7 @@ class CanyonRacerEnv(gym.Env):
         self.crash_penalty = crash_penalty
         self.life_loss_penalty = life_loss_penalty
         self.life_gain_bonus = life_gain_bonus
+        self.score_reward_scale = score_reward_scale
         self.game_over_penalty = game_over_penalty
         self.settle_frames = settle_frames
         self.action_offset = action_offset
@@ -381,7 +383,7 @@ class CanyonRacerEnv(gym.Env):
         self._steps += 1
         raw = self._read_raw()
         prev = self._prev
-        reward = (raw["score"] - prev["score"]) / 10.0
+        reward = (raw["score"] - prev["score"]) * self.score_reward_scale
         dl = raw["lives"] - prev["lives"]
         reward += self.life_gain_bonus * dl if dl > 0 else self.life_loss_penalty * dl
         was_crash = SHIP_STATE_NAMES.get(prev["ship_state_raw"], 0) in SHIP_CRASHING

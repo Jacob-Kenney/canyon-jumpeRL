@@ -18,7 +18,7 @@ while not done:
 ## Constructor args
 `rom_path, observation_mode="box"|"state"|"pixels"|"both", action_mode="box"|"discrete"|"multibinary", allow_save_button=False,
 action_offset=0, frame_skip=4, max_steps=2000, render_mode=None|"rgb_array", crash_penalty=1.0, life_loss_penalty=0.5,
-life_gain_bonus=1.0, game_over_penalty=1.0, settle_frames=60`.
+life_gain_bonus=1.0, score_reward_scale=0.1, game_over_penalty=1.0, settle_frames=60`.
 
 ## Actions -> real joypad buttons
 Buttons are held for all `frame_skip` frames of a step (GBDK bits: RIGHT 01, LEFT 02, UP 04, DOWN 08, A 10, B 20, SELECT 40, START 80).
@@ -60,7 +60,7 @@ ship_jump_velocity +23, obstacles +25, score +77, game_level +3, paused +2, cur_
 (4 = RUNNING, other = not in a round), `__rand_seed` 0xC89B, `rand_seed_copy` 0xC52B.
 
 ## Reward / termination
-`reward = dScore/10 (=+1 per obstacle) + life_gain_bonus*lives_gained - life_loss_penalty*lives_lost - crash_penalty (once, when crash starts) - game_over_penalty (on terminal)`.
+`reward = dScore*score_reward_scale (default 0.1 = +1 per obstacle; 1.0 makes the episode return equal the game score) + life_gain_bonus*lives_gained - life_loss_penalty*lives_lost - crash_penalty (once, when crash starts) - game_over_penalty (on terminal)`.
 `terminated` when the ROM leaves the running state (game over: crash with 0 lives). `truncated` after `max_steps` agent steps.
 A crash auto-rewinds to the last save point (costing a life) after ~2-3 s of non-controllable frames. `info`: steps, frames, score, lives, level,
 ship_state, paused, game_state, game_seed, crashed.

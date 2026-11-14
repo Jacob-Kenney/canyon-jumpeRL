@@ -32,12 +32,13 @@ if __name__ == "__main__":
     out = Path(args.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    # Reward = change in the game's own score only (+1 per obstacle cleared, i.e. +10 game points).
+    # Reward = change in the game's own score only, 1:1 (+10 per obstacle cleared), so the episode return equals the game score.
     # No crash / life / game-over terms. The score drops back when the game rewinds after a crash, so that counts too.
     register_env("canyon_racer_score", lambda cfg: CanyonRacerEnv(
-        crash_penalty=0.0, life_loss_penalty=0.0, life_gain_bonus=0.0, game_over_penalty=0.0))
+        score_reward_scale=1.0, crash_penalty=0.0, life_loss_penalty=0.0, life_gain_bonus=0.0, game_over_penalty=0.0))
 
     algo = (PPOConfig().environment("canyon_racer_score").env_runners(num_env_runners=args.env_runners)
+            .training(lr=3e-4, vf_clip_param=1e4)  # default lr is 5e-5; value targets are now in game points, so don't clip them at 10
             .callbacks(GameScore).build_algo())
     game, ret = [], []
     for i in range(args.iters):
