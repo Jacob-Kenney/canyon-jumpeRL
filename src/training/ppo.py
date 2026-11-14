@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from canyon_jumperl import CanyonRacerEnv
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.callbacks.callbacks import RLlibCallback
+from ray.tune.registry import register_env
 
 
 class GameScore(RLlibCallback):
@@ -31,7 +32,12 @@ if __name__ == "__main__":
     out = Path(args.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    algo = (PPOConfig().environment(CanyonRacerEnv).env_runners(num_env_runners=args.env_runners)
+    # Reward = change in the game's own score only (+1 per obstacle cleared, i.e. +10 game points).
+    # No crash / life / game-over terms. The score drops back when the game rewinds after a crash, so that counts too.
+    register_env("canyon_racer_score", lambda cfg: CanyonRacerEnv(
+        crash_penalty=0.0, life_loss_penalty=0.0, life_gain_bonus=0.0, game_over_penalty=0.0))
+
+    algo = (PPOConfig().environment("canyon_racer_score").env_runners(num_env_runners=args.env_runners)
             .callbacks(GameScore).build_algo())
     game, ret = [], []
     for i in range(args.iters):
