@@ -57,6 +57,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pyboy" },
     { name = "ray", extra = ["rllib"] },
+    { name = "stable-baselines3" },
     { name = "torch" },
 ]
 
@@ -72,6 +73,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=13.0.0" },
     { name = "pyboy", specifier = ">=2.9.0" },
     { name = "ray", extras = ["rllib"], specifier = ">=2.60.0" },
+    { name = "stable-baselines3", specifier = ">=2.9.2" },
     { name = "torch", specifier = ">=2.15.0" },
 ]
 
@@ -1628,6 +1630,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/41/43/a232e3cd804293bd4f6d01e8895bc0f6f83ea148d712baf9d783c7d93d23/sse_starlette-3.7.0.tar.gz", hash = "sha256:326416da2ab52e9a41b3f409d3ff897eda45aa68c9f3b7b17d0913aab8d219c3", size = 43869, upload-time = "2026-11-07T11:15:49.389Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/11/25cabac0a24fa76f58637d8671b549c90d818d69d26beecf0c59a3b186e0/sse_starlette-3.7.0-py3-none-any.whl", hash = "sha256:f1d3136caa12d129284fca3d2ded79bc9af943320b6472712955fea52a6d3eea", size = 18432, upload-time = "2026-11-07T11:15:47.86Z" },
+]
+
+[[package]]
+name = "stable-baselines3"
+version = "2.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cloudpickle" },
+    { name = "gymnasium" },
+    { name = "numpy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/86/fb86bf20bc2321d14a5a40221119043186efaebe2490e1038d17e4a4783e/stable_baselines3-2.9.2.tar.gz", hash = "sha256:8af267e9513343f481b3f0680b7740ad79a746873db24f18a9fb2edcbd9a2df7", size = 223761, upload-time = "2026-10-26T09:35:30.876Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b0/c0/d4f648cbfb1efce94ad0dd0db3487e3e8f2bd572f035cfc0fc1b8a070cfe/stable_baselines3-2.9.2-py3-none-any.whl", hash = "sha256:0b7db1789bea31d43b3e9be4f88abf639549b587f2bf2a2461ee9d3d77c68e96", size = 188412, upload-time = "2026-10-26T09:35:28.923Z" },
 ]
 
 [[package]]
