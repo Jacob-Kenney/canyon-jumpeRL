@@ -9,7 +9,7 @@ which computes them from obs/info.  ``terminated`` means the GAME is over.
     canyon-racer-mcp --http --host 127.0.0.1 --port 8000                    # streamable HTTP at /mcp
 
 Tools: reset(seed) and step(action) only. The action encoding is in step's description.
-step(action): an int is the env's Discrete index; a list of 8 ints (0/1) is the MultiBinary encoding in order
+step(action): a list of 8 floats in [0,1] (pressed if > 0.5) in order
 [RIGHT,LEFT,UP,DOWN,A,B,SELECT,START].  Buttons are held for the env's default frame count (frame_skip=4).
 Results: {"observation", "terminated", "info"}; info = {lives, score, level, ship_state, paused, game_over,
 game_state, frames}.
