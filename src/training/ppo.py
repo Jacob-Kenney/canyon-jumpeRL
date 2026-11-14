@@ -11,7 +11,12 @@ Reward = change in the game's own score, 1:1 (+10 per obstacle, no crash / life 
 return equals its game score.
 """
 import argparse
+import os
 from pathlib import Path
+
+# Under `uv run`, Ray ships the whole .venv (torch etc.) to each worker via a runtime env, copied into /tmp (small tmpfs).
+# Workers already inherit this environment, so skip that.
+os.environ.setdefault("RAY_ENABLE_UV_RUN_RUNTIME_ENV", "0")
 
 import matplotlib
 matplotlib.use("Agg")
