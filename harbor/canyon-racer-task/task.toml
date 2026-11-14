@@ -1,0 +1,35 @@
+schema_version = "1.1"
+artifacts = [
+  { source = "/trace/trace.jsonl", service = "mcp-server", destination = "trace.jsonl" },
+]
+
+[task]
+name = "canyon-jumperl/canyon-racer"
+description = "Play the Game Boy game Canyon Racer through an MCP server and clear as many obstacles as possible."
+authors = []
+keywords = ["game", "mcp", "reinforcement-learning", "gameboy"]
+
+[metadata]
+difficulty = "medium"
+category = "games"
+license_notice = "Canyon Racer ROM by bbbbbr, CC-BY-NC-SA 4.0 (non-commercial, share-alike). Non-commercial use only."
+
+[verifier]
+timeout_sec = 300.0
+environment_mode = "separate"
+
+[agent]
+timeout_sec = 1800.0
+
+[environment]
+build_timeout_sec = 900.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 10240
+
+[[environment.mcp_servers]]
+name = "canyon-racer"
+transport = "streamable-http"
+url = "http://mcp-server:8000/mcp"
+
+[solution.env]

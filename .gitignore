@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# upstream clone, re-create with git clone (see rom/README.md)
+rom/canyon-racer/
+# build output
+rom/*/obj/
+rom/*/build/
+# vendored by harbor/canyon-racer-task/sync.sh
+harbor/canyon-racer-task/environment/mcp-server/game/
+harbor/canyon-racer-task/tests/game/

@@ -1,0 +1,27 @@
+[project]
+name = "canyon-jumperl"
+version = "0.1.0"
+description = "Gymnasium environment and MCP server for the Canyon Racer Game Boy game, run in PyBoy"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "gymnasium>=1.2.2",
+    "mcp>=2.3.0",
+    "pillow>=13.0.0",
+    "pyboy>=2.9.0",
+    "ray[rllib]>=2.60.0",
+    "torch>=2.15.0",
+]
+
+[project.scripts]
+canyon-jumperl = "canyon_jumperl:main"
+canyon-racer-mcp = "canyon_jumperl.mcp_server:main"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
