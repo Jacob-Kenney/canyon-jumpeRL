@@ -9,8 +9,8 @@ which computes them from obs/info.  ``terminated`` means the GAME is over.
     canyon-racer-mcp --http --host 127.0.0.1 --port 8000                    # streamable HTTP at /mcp
 
 Tools: reset(seed) and step(action) only. The action encoding is in step's description.
-step(action): a list of 8 floats in [0,1] (pressed if > 0.5) in order
-[RIGHT,LEFT,UP,DOWN,A,B,SELECT,START].  Buttons are held for the env's default frame count (frame_skip=4).
+step(action): a list of 7 floats in [0,1] (pressed if > 0.5) in order
+[RIGHT,LEFT,UP,DOWN,A,B,SELECT]. There is no START button (pause is not available).  Buttons are held for the env's default frame count (frame_skip=4).
 Results: {"observation", "terminated", "info"}; info = {lives, score, level, ship_state, paused, game_over,
 game_state, frames}.
 
@@ -33,7 +33,7 @@ import numpy as np
 from gymnasium import spaces
 from mcp.server.mcpserver import Image, MCPServer
 
-from .env import BOX_PRESS_THRESHOLD, BUTTON_ORDER, GAME_STATE_RUNNING, OBS_LAYOUT, CanyonRacerEnv
+from .env import BOX_PRESS_THRESHOLD, BUTTON_ORDER, GAME_STATE_RUNNING, N_BUTTONS, OBS_LAYOUT, CanyonRacerEnv
 
 B64_THRESHOLD = 4096
 
@@ -101,7 +101,7 @@ class GameBackend(ABC):
 
     @abstractmethod
     def step(self, action: Any) -> tuple[Any, bool, dict]:
-        """action: int (Discrete index) or list of 8 bits (MultiBinary). -> (obs, game_over, info)."""
+        """action: int (Discrete index) or list of 7 bits (MultiBinary). -> (obs, game_over, info)."""
 
     @abstractmethod
     def step_buttons(self, buttons: list[str]) -> tuple[Any, bool, dict]: ...
@@ -140,9 +140,9 @@ class EmulatorBackend(GameBackend):
 
     def step(self, action):
         a = np.asarray(action, dtype=np.float64)
-        if a.shape != (8,) or not np.isfinite(a).all() or a.min() < 0 or a.max() > 1:
-            raise ValueError("action must be a list of 8 floats in [0,1]: [RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]")
-        return self._step({BUTTON_ORDER[i] for i in range(8) if a[i] > BOX_PRESS_THRESHOLD})
+        if a.shape != (N_BUTTONS,) or not np.isfinite(a).all() or a.min() < 0 or a.max() > 1:
+            raise ValueError("action must be a list of 7 floats in [0,1]: [RIGHT,LEFT,UP,DOWN,A,B,SELECT]")
+        return self._step({BUTTON_ORDER[i] for i in range(N_BUTTONS) if a[i] > BOX_PRESS_THRESHOLD})
 
     def step_buttons(self, buttons):
         bad = [b for b in buttons if b not in BUTTON_ORDER]
@@ -177,7 +177,7 @@ class HardwareBackend(GameBackend):
 
     Planned mapping (to be aligned with docs/LINK_PROTOCOL.md, which does not exist yet):
 
-    * step(action): Discrete index -> button set via the same table, or MultiBinary(8) bits in
+    * step(action): Discrete index -> button set via the same table, or MultiBinary(7) bits in
       BUTTON_ORDER -> the 8-bit GBDK joypad byte (RIGHT 0x01 LEFT 0x02 UP 0x04 DOWN 0x08 A 0x10 B 0x20
       SELECT 0x40 START 0x80), sent as a link command byte; the ROM holds it for frame_skip frames and replies.
     * observation: the reply "link state packet" is parsed into the identical dict: ship (x,y,z,vz),
@@ -208,8 +208,8 @@ def build_server(backend: GameBackend, **server_kwargs) -> MCPServer:
     layout = "; ".join(f"{k}={'[%d:%d]' % (v.start, v.stop) if isinstance(v, slice) else '[%d]' % v}"
                        for k, v in OBS_LAYOUT.items())
     step_doc = (
-        "Press buttons for 4 frames and return the result. `action` = list of 8 floats in [0,1] "
-        "[RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]; a button is pressed when its value is > 0.5 (e.g. jump = A). "
+        "Press buttons for 4 frames and return the result. `action` = list of 7 floats in [0,1] "
+        "[RIGHT,LEFT,UP,DOWN,A,B,SELECT] (no START); a button is pressed when its value is > 0.5 (e.g. jump = A). "
         "Returns {observation, terminated (true when the game is over), info (lives, score, level, ship_state, "
         "paused, game_over, game_state, frames)}. `observation` is a flat float32 feature vector (shape [33]) with layout "
         f"{layout}. ship = x/100, y/100, z/100, vz/3; crashing = 1 while the ship is crashing (buttons do nothing); "

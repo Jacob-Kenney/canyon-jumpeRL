@@ -35,7 +35,9 @@ DEFAULT_ROM_DIR = Path(__file__).resolve().parents[2] / "roms"
 # GBDK joypad bit values
 BUTTON_BITS = {"right": 0x01, "left": 0x02, "up": 0x04, "down": 0x08,
                "a": 0x10, "b": 0x20, "select": 0x40, "start": 0x80}
-BUTTON_ORDER = ["right", "left", "up", "down", "a", "b", "select", "start"]
+# START is not an action: it toggles pause, which only wastes steps. (The env still presses it internally to get past the title screen.)
+BUTTON_ORDER = ["right", "left", "up", "down", "a", "b", "select"]
+N_BUTTONS = len(BUTTON_ORDER)
 
 # Discrete action table (buttons held for the whole frame_skip window)
 DISCRETE_ACTIONS: list[tuple[str, ...]] = [
@@ -96,7 +98,7 @@ class CanyonRacerEnv(gym.Env):
         self,
         rom_path: str | os.PathLike | None = None,
         observation_mode: str = "box",        # "box" (engineered feature vector, default) | "state" (Dict) | "pixels" | "both"
-        action_mode: str = "box",             # "box" (8 floats in [0,1], pressed if > 0.5) | "discrete" | "multibinary"
+        action_mode: str = "box",             # "box" (7 floats in [0,1], pressed if > 0.5) | "discrete" | "multibinary"
         allow_save_button: bool = False,      # include B in the discrete action table
         action_offset: int = 0,               # latency: a step's buttons take effect this many frames later
         frame_skip: int = 4,
@@ -140,9 +142,9 @@ class CanyonRacerEnv(gym.Env):
             self.action_space = spaces.Discrete(len(self._action_table))
         elif action_mode == "box":
             # one float per button in BUTTON_ORDER; a button is pressed when its value is > BOX_PRESS_THRESHOLD
-            self.action_space = spaces.Box(0.0, 1.0, (8,), np.float32)
+            self.action_space = spaces.Box(0.0, 1.0, (N_BUTTONS,), np.float32)
         else:
-            self.action_space = spaces.MultiBinary(8)  # order: BUTTON_ORDER
+            self.action_space = spaces.MultiBinary(N_BUTTONS)  # order: BUTTON_ORDER
 
         state_space = spaces.Dict({
             "ship": spaces.Box(-256.0, 256.0, (4,), np.float32),  # x, y, z (px), jump velocity (px/frame)
@@ -328,8 +330,8 @@ class CanyonRacerEnv(gym.Env):
             return set(self._action_table[int(action)])
         a = np.asarray(action).reshape(-1)
         if self.action_mode == "box":
-            return {BUTTON_ORDER[i] for i in range(8) if a[i] > BOX_PRESS_THRESHOLD}
-        return {BUTTON_ORDER[i] for i in range(8) if a[i]}
+            return {BUTTON_ORDER[i] for i in range(N_BUTTONS) if a[i] > BOX_PRESS_THRESHOLD}
+        return {BUTTON_ORDER[i] for i in range(N_BUTTONS) if a[i]}
 
     def _set_buttons(self, want: set[str]):
         for b in self._held - want:

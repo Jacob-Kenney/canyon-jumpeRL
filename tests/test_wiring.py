@@ -87,22 +87,6 @@ def test_b_adds_save_state_costing_a_life(env):
     assert info["lives"] == l0 - 1
 
 
-def test_start_pauses(env):
-    hold(env, [], 5)
-    env.step(mb("start"))
-    env.step(mb())
-    env.step(mb())
-    o, info = hold(env, ["right"], 30)
-    x_paused = o["ship"][0]
-    assert info["paused"] is True
-    o, info = hold(env, ["right"], 30)
-    assert o["ship"][0] == x_paused, "ship must not move while paused"
-    env.step(mb("start"))
-    hold(env, [], 5)
-    o, info = hold(env, ["right"], 30)
-    assert info["paused"] is False and o["ship"][0] > x_paused
-
-
 def test_discrete_table_matches_buttons():
     e = mk(allow_save_button=True, frame_skip=2)
     e.reset(seed=0, options=NOSEED)

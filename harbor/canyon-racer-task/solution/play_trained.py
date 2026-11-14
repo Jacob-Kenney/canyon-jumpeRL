@@ -10,8 +10,9 @@ W = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "policy.npz
 def policy(obs):
     h = np.tanh(W["w0"] @ obs + W["b0"])
     h = np.tanh(W["w1"] @ h + W["b1"])
-    mean = (W["wp"] @ h + W["bp"])[:8]  # action means; pressed when > 0.5
-    return [1.0 if m > 0.5 else 0.0 for m in mean]
+    out = W["wp"] @ h + W["bp"]
+    mean = out[:len(out) // 2]  # RLlib action means in [-1,1]; env action = (mean+1)/2, so pressed when mean > 0
+    return [1.0 if m > 0 else 0.0 for m in mean]
 
 
 async def main():

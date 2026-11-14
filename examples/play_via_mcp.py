@@ -21,10 +21,10 @@ MAX_STEPS = 300  # client-side truncation (training-file concern)
 
 
 def policy(obs) -> list[float]:
-    """Any callable obs -> 8 button floats in BUTTON_ORDER. Swap in your trained network."""
+    """Any callable obs -> 7 button floats in BUTTON_ORDER. Swap in your trained network."""
     ahead = obs[OBS_LAYOUT["obstacles"]].reshape(2, 9)[0]  # present, one-hot type x5, dx_left, dx_right, dy (all relative to the ship, /100)
     dx_left, dx_right, dy = ahead[6] * 100, ahead[7] * 100, ahead[8] * 100
-    action = [0.0] * 8
+    action = [0.0] * len(BUTTON_ORDER)
     if ahead[0] and ahead[5] == 0 and 0 < dy < 40 and dx_left - 8 <= 0 <= dx_right:  # ahead[5] = +1 item
         action[BUTTON_ORDER.index("a")] = 1.0  # jump
     return action

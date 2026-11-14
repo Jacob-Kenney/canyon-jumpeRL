@@ -9,7 +9,7 @@ from canyon_jumperl.env import BUTTON_ORDER, OBS_DIM, OBS_LAYOUT, CanyonRacerEnv
 
 
 def _act(*buttons):
-    a = np.zeros(8, np.float32)
+    a = np.zeros(len(BUTTON_ORDER), np.float32)
     for b in buttons:
         a[BUTTON_ORDER.index(b)] = 1.0
     return a
@@ -18,7 +18,8 @@ def _act(*buttons):
 def test_default_spaces_are_boxes():
     env = gym.make("CanyonRacer-v0")
     assert isinstance(env.observation_space, spaces.Box) and env.observation_space.shape == (OBS_DIM,)
-    assert isinstance(env.action_space, spaces.Box) and env.action_space.shape == (8,)
+    assert isinstance(env.action_space, spaces.Box) and env.action_space.shape == (len(BUTTON_ORDER),)
+    assert "start" not in BUTTON_ORDER
     assert env.observation_space.dtype == np.float32 and env.action_space.dtype == np.float32
     obs, info = env.reset(seed=0)
     assert env.observation_space.contains(obs)
@@ -37,8 +38,8 @@ def test_box_env_passes_check_env():
 def test_box_action_threshold():
     env = CanyonRacerEnv(frame_skip=1, max_steps=10**6)
     env.reset(seed=0)
-    x0 = env.step(np.zeros(8, np.float32))[0][OBS_LAYOUT["ship"]][0]
-    weak = env.step(np.full(8, 0.0, np.float32) + 0.3 * np.eye(8, dtype=np.float32)[0])[0][OBS_LAYOUT["ship"]][0]
+    x0 = env.step(np.zeros(len(BUTTON_ORDER), np.float32))[0][OBS_LAYOUT["ship"]][0]
+    weak = env.step(0.3 * np.eye(len(BUTTON_ORDER), dtype=np.float32)[0])[0][OBS_LAYOUT["ship"]][0]
     assert weak == x0                      # 0.3 < 0.5: not pressed
     for _ in range(5):
         obs = env.step(_act("right"))[0]
@@ -83,3 +84,24 @@ def test_feature_vector_is_relative_scaled_and_unclipped():
     o = v[OBS_LAYOUT["obstacles"]].reshape(2, 9)                       # only the 2 nearest obstacles are used
     np.testing.assert_allclose(o[0], [1, 0, 0, 0, 1, 0, -0.2, 0.12, 0.12], atol=1e-6)    # type 3 (full), dy=(112-100)/100
     np.testing.assert_allclose(o[1], [1, 0, 0, 0, 0, 1, 0.04, 0.2, 0.92], atol=1e-6)     # type 4 (+1 item)
+
+
+def test_heuristic_matches_harbor_oracle_policy():
+    """src/canyon_jumperl/heuristic.py and harbor/.../solution/play.py are two copies of one policy; keep them identical."""
+    import importlib.util
+    from pathlib import Path
+    from canyon_jumperl.heuristic import HeuristicPolicy
+    spec = importlib.util.spec_from_file_location(
+        "play", Path(__file__).resolve().parents[1] / "harbor/canyon-racer-task/solution/play.py")
+    play = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(play)
+    env, mine, theirs = CanyonRacerEnv(max_steps=10**6), HeuristicPolicy(), play.Policy()
+    obs, _ = env.reset(seed=0)
+    jumps = 0
+    for _ in range(400):
+        a, b = mine(obs), np.array(theirs(obs), np.float32)
+        np.testing.assert_array_equal(a, b)
+        jumps += int(a[BUTTON_ORDER.index("a")])
+        obs = env.step(a)[0]
+    assert jumps > 0
+    env.close()

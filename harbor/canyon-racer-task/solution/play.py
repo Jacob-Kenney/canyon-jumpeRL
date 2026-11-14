@@ -13,8 +13,8 @@ STEPS = int(os.environ.get("STEPS", 1500))
 # observation vector layout (shape [33], positions /100): ship [0:4]=x,y,z,vz; crashing [4]; canyon_left_rel [5:15];
 # obstacles [15:33] = 2 rows x [present, one-hot type x5 (4 = +1 item), dx_left, dx_right, dy = (ship_y - obstacle_y)]
 Z, CRASHING, OBST = 2, 4, slice(15, 33)
-NOOP = [0.0] * 8
-JUMP = [0, 0, 0, 0, 1, 0, 0, 0]  # A: [RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]
+NOOP = [0.0] * 7
+JUMP = [0, 0, 0, 0, 1, 0, 0]  # A: [RIGHT,LEFT,UP,DOWN,A,B,SELECT]
 
 
 def data(res):

@@ -104,8 +104,8 @@ def test_tool_description_and_errors():
             async with ClientSession(r, w) as s:
                 await s.initialize()
                 tools = {t.name: t for t in (await s.list_tools()).tools}
-                assert "RIGHT,LEFT,UP,DOWN,A,B,SELECT,START" in tools["step"].description
+                assert "RIGHT,LEFT,UP,DOWN,A,B,SELECT" in tools["step"].description
                 await s.call_tool("reset", {"seed": 1})
-                assert (await s.call_tool("step", {"action": [2.0] * 8})).is_error
+                assert (await s.call_tool("step", {"action": [2.0] * 7})).is_error
                 assert (await s.call_tool("step", {"action": [1, 0]})).is_error
     anyio.run(run)

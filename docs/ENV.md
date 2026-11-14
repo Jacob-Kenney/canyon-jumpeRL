@@ -1,7 +1,7 @@
 # Canyon Racer environment
 
 `gym.make("CanyonRacer-v0")` -> `canyon_jumperl.env.CanyonRacerEnv` (PyBoy headless, state read from emulator RAM).
-Defaults are `observation_mode="box"` (engineered `Box(33)` feature vector) and `action_mode="box"` (`Box(8)`). The `"state"` Dict, `"pixels"`, `"discrete"` and
+Defaults are `observation_mode="box"` (engineered `Box(33)` feature vector) and `action_mode="box"` (`Box(7)`). The `"state"` Dict, `"pixels"`, `"discrete"` and
 `"multibinary"` modes are options. The tables below describe the Dict/discrete modes. The Box layout is in the last section.
 ROM: `roms/canyon_racer_0.7.7_mbc5_rumble.gb` (+ `.noi`/`.cdb` next to it; override with `rom_path=` or `$CANYON_RACER_ROM`).
 
@@ -21,9 +21,9 @@ action_offset=0, frame_skip=4, max_steps=2000, render_mode=None|"rgb_array", cra
 life_gain_bonus=1.0, score_reward_scale=0.1, game_over_penalty=1.0, settle_frames=60`.
 
 ## Actions -> real joypad buttons
-Buttons are held for all `frame_skip` frames of a step (GBDK bits: RIGHT 01, LEFT 02, UP 04, DOWN 08, A 10, B 20, SELECT 40, START 80).
+Buttons are held for all `frame_skip` frames of a step (GBDK bits: RIGHT 01, LEFT 02, UP 04, DOWN 08, A 10, B 20, SELECT 40; START 80 is not an action).
 
-`multibinary`: `MultiBinary(8)` in order `[RIGHT, LEFT, UP, DOWN, A, B, SELECT, START]`. START pauses the game (toggle).
+`multibinary`: `MultiBinary(7)` in order `[RIGHT, LEFT, UP, DOWN, A, B, SELECT]`. There is no START action (it only toggles pause); the env presses START itself once to get past the title screen.
 
 `discrete`:
 | id | buttons | id | buttons |
@@ -36,7 +36,7 @@ Buttons are held for all `frame_skip` frames of a step (GBDK bits: RIGHT 01, LEF
 | 5 | A (jump; hold = higher) | 11 | B (only with `allow_save_button=True`) |
 
 Verified against the real ROM in `tests/test_wiring.py`: D-pad moves x/y (0.5 px/frame), A raises z and sets ship_state=JUMP
-(held A jumps longer than a tap), B costs exactly one life (edge-triggered), START pauses (ship frozen, `info["paused"]`).
+(held A jumps longer than a tap), B costs exactly one life (edge-triggered). START was removed from the action space.
 **Finding:** the ROM source (`entity_ship.c`) has no separate "A+UP extra-long jump"; UP just moves the ship up while the normal
 jump happens (the jump profile of A and A+UP is identical, and a test asserts this). Actions 8-10 are kept for convenience.
 
@@ -81,7 +81,7 @@ Flags (operational only): `--rom PATH`, `--backend emulator|hardware`, `--http [
 Uses mcp 2.x (`mcp.server.mcpserver.MCPServer`, formerly FastMCP).
 
 Tools: `reset(seed)` (new game) and `step(action)` only. The action encoding is in the `step` tool description.
-`step(action)`: a list of 8 floats in [0,1] (the Box encoding, pressed if > 0.5) in the order `[RIGHT,LEFT,UP,DOWN,A,B,SELECT,START]`.
+`step(action)`: a list of 7 floats in [0,1] (the Box encoding, pressed if > 0.5) in the order `[RIGHT,LEFT,UP,DOWN,A,B,SELECT]`.
 Buttons are held for the default frame count. Returns `{"observation", "terminated", "info"}`; `info` = `lives, score, level, ship_state, paused,
 game_over, game_state, frames`.
 
@@ -120,8 +120,8 @@ No training code is included.
   Dropped compared to the raw state: `level`, `speed` (constant 2.0 in all measured play), `score`, `lives`, `ship_state` (jumping is `z > 0`),
   and obstacle rows 3-5 (never more than 2 obstacles at once in ~19k measured steps; only levels 0-2 were reached). `score`, `lives` and
   `level` are still in `info`, and the `"state"` Dict mode still has everything.
-* **Action:** `Box(0, 1, (8,), float32)` in `BUTTON_ORDER` = RIGHT, LEFT, UP, DOWN, A, B, SELECT, START. A button is
-  pressed when its value is > 0.5 (`BOX_PRESS_THRESHOLD`). B costs a life and START pauses, so a policy can hurt itself.
+* **Action:** `Box(0, 1, (7,), float32)` in `BUTTON_ORDER` = RIGHT, LEFT, UP, DOWN, A, B, SELECT. A button is
+  pressed when its value is > 0.5 (`BOX_PRESS_THRESHOLD`). B costs a life, so a policy can hurt itself.
 * **`action_offset=k` (frames, default 0):** latency simulation. The buttons chosen at a step reach the emulator k frames
   later (a FIFO fed one entry per frame); for the first k frames after a reset no buttons are pressed. The game samples
   input on its own frame phase, so the visible reaction can lag one frame more than k.
