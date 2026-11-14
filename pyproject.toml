@@ -10,7 +10,6 @@ dependencies = [
     "pillow>=13.0.0",
     "pyboy>=2.9.0",
     "ray[rllib]>=2.60.0",
-    "stable-baselines3>=2.9.2",
     "torch>=2.15.0",
 ]
 

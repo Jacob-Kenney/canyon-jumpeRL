@@ -1,23 +1,25 @@
-"""PPO on CanyonRacer-v0 with stable-baselines3.  Run from the repo root:
+"""PPO on CanyonRacerEnv with RLlib.  Run from the repo root:
 
-    uv run python src/training/ppo.py --steps 2000000 --envs 4
+    uv run python src/training/ppo.py --iters 100 --env-runners 2
 """
 import argparse
 
-import canyon_jumperl  # noqa: F401  (registers CanyonRacer-v0)
-from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+from canyon_jumperl import CanyonRacerEnv
+from ray.rllib.algorithms.ppo import PPOConfig
 
-if __name__ == "__main__":  # required: subprocess envs re-import this file
+if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--steps", type=int, default=2_000_000)
-    p.add_argument("--envs", type=int, default=4)
+    p.add_argument("--iters", type=int, default=100)
+    p.add_argument("--env-runners", type=int, default=2)
     p.add_argument("--out", default="runs/ppo")
     args = p.parse_args()
 
-    env = VecNormalize(make_vec_env("CanyonRacer-v0", n_envs=args.envs, vec_env_cls=SubprocVecEnv))
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=None)
-    model.learn(args.steps)
-    model.save(f"{args.out}/model")
-    env.save(f"{args.out}/vecnormalize.pkl")
+    algo = (PPOConfig()
+            .environment(CanyonRacerEnv)
+            .env_runners(num_env_runners=args.env_runners)
+            .training(train_batch_size_per_learner=4000, lr=3e-4)
+            .build_algo())
+    for i in range(args.iters):
+        r = algo.train()
+        print(i, r["env_runners"].get("episode_return_mean"), flush=True)
+    print("saved", algo.save(args.out))
