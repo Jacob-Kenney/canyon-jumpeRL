@@ -1,10 +1,11 @@
 # src/training
 
-`ppo.py`: PPO from RLlib on `CanyonRacerEnv`, using the env's default Box(44) observation and Box(8) action spaces.
+`ppo.py`: RLlib PPO on `CanyonRacerEnv` (Box(44) observation, Box(8) action), default hyperparameters.
 
 ```bash
 uv run python src/training/ppo.py --iters 100 --env-runners 2 --out runs/ppo
 ```
 
-Prints the mean episode return each iteration and saves an RLlib checkpoint to `--out` (absolute path recommended).
-The policy can press any button, including B (costs a life) and START (pauses), and has to learn to avoid them.
+Each iteration prints the game score (the game's own score, +10 per obstacle, mean over the last 100 episodes) and the training return
+(the env reward, which includes crash and life penalties). Saves the RLlib checkpoint to `--out` and a graph of both curves per
+iteration to `<out>.png` (here `runs/ppo.png`).
