@@ -31,7 +31,7 @@ from ray.tune.registry import register_env
 
 SCORE_ONLY = dict(score_reward_scale=1.0, crash_penalty=0.0, life_loss_penalty=0.0, life_gain_bonus=0.0, game_over_penalty=0.0)
 GAMMA = 0.99
-EPISODE_STEPS = 1500
+NO_STEP_LIMIT = None  # no step limit: episodes end only at game over
 
 
 class GameScore(RLlibCallback):
@@ -43,7 +43,7 @@ class GameScore(RLlibCallback):
 
 def collect_heuristic(n_steps: int):
     """Roll out the heuristic. Returns obs (N,33), actions (N,7) in {0,1}, discounted returns (N,), final scores per episode."""
-    env, pol = CanyonRacerEnv(max_steps=EPISODE_STEPS, **SCORE_ONLY), HeuristicPolicy()
+    env, pol = CanyonRacerEnv(max_steps=NO_STEP_LIMIT, **SCORE_ONLY), HeuristicPolicy()
     obs_l, act_l, ret_l, scores = [], [], [], []
     seed = 0
     while len(obs_l) < n_steps:
@@ -108,7 +108,7 @@ def imitate(module, obs, act, ret, epochs=60, lr=1e-3, batch=256, init_std=0.3):
 
 def play(module, episodes=3):
     """Deterministic rollouts of the module's mean action. Returns (mean final score, best peak score)."""
-    env = CanyonRacerEnv(max_steps=EPISODE_STEPS, **SCORE_ONLY)
+    env = CanyonRacerEnv(max_steps=NO_STEP_LIMIT, **SCORE_ONLY)
     finals, peaks = [], []
     for ep in range(episodes):
         obs, _ = env.reset(seed=1000 + ep)
@@ -138,7 +138,7 @@ if __name__ == "__main__":  # (the guard matters: worker processes re-import thi
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
 
-    register_env("canyon_racer_score", lambda cfg: CanyonRacerEnv(**SCORE_ONLY))
+    register_env("canyon_racer_score", lambda cfg: CanyonRacerEnv(max_steps=NO_STEP_LIMIT, **SCORE_ONLY))
     algo = (PPOConfig().environment("canyon_racer_score").env_runners(num_env_runners=args.env_runners)
             .training(lr=args.lr, num_epochs=args.epochs, vf_clip_param=1e4)  # value targets are in game points: don't clip at 10
             .callbacks(GameScore).build_algo())

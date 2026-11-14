@@ -1,9 +1,8 @@
 """Authoritative scoring: replay the sidecar's action trace in a fresh emulator (seed 0) and score it.
-score = best in-game score over any episode / 10 = obstacles cleared. reward = min(1, cleared / REF)."""
+reward = best raw in-game score over any episode (no normalisation, no cap)."""
 import json, os, sys
 from canyon_jumperl.mcp_server import EmulatorBackend
 
-REF = float(os.environ.get("REF_OBSTACLES", "40"))
 MAX_STEPS = 1500
 trace, out = sys.argv[1], sys.argv[2]
 recs = []
@@ -24,7 +23,6 @@ for r in recs:
         best = max(best, info["score"])
         if over:
             pass  # game over: further steps in this episode are no-ops for scoring
-cleared = best / 10
-reward = max(0.0, min(1.0, cleared / REF))
-print(f"steps={steps} best_score={best} obstacles_cleared={cleared} ref={REF} reward={reward:.4f}")
-open(out, "w").write(f"{reward:.4f}\n")
+reward = float(best)
+print(f"steps={steps} best_score={best} reward={reward}")
+open(out, "w").write(f"{reward}\n")

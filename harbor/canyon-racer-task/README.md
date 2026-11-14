@@ -9,7 +9,7 @@ The MCP server is declared in `task.toml` (`[[environment.mcp_servers]]`), which
 `opencode.json` as a remote MCP server. Run `./sync.sh` to re-vendor `src/` + ROM + pinned `constraints.txt` (from uv.lock) after
 the project changes (needed before building).
 
-Score: `reward = min(1, obstacles_cleared_in_best_episode / 40)`; partial credit is linear.
+Score: `reward = best raw in-game score over any episode` (10 per obstacle cleared; no normalisation or cap).
 
 Trust model: the agent only reaches the sidecar over MCP; it cannot touch the emulator, ROM, trace or verifier. The trace is
 copied (artifact, service `mcp-server`) into a separate verifier container (own image with the game and `tests/` baked in), which

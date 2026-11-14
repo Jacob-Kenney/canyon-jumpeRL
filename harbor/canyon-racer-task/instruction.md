@@ -21,5 +21,5 @@ uses the `mcp` Python package (installed) to loop over `step` is far cheaper tha
 allowed but only your best episode counts.
 
 **Scoring:** the server records every action; the grader replays them in a fresh emulator and computes
-`reward = min(1, best_score/10 / 40)`, i.e. obstacles cleared in one run, 40 or more = full marks. Nothing else counts;
+`reward = best_score`, the raw in-game score of your best run (10 points per obstacle cleared; no cap). Nothing else counts;
 there is nothing to write to disk.

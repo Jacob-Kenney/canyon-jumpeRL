@@ -102,7 +102,7 @@ class CanyonRacerEnv(gym.Env):
         allow_save_button: bool = False,      # include B in the discrete action table
         action_offset: int = 0,               # latency: a step's buttons take effect this many frames later
         frame_skip: int = 4,
-        max_steps: int = 2000,
+        max_steps: int | None = 2000,  # None = no step limit (episodes end only at game over)
         render_mode: str | None = None,
         crash_penalty: float = 1.0,           # applied once when the ship starts crashing
         life_loss_penalty: float = 0.5,       # per life lost (crash rewind or B save)
@@ -401,7 +401,7 @@ class CanyonRacerEnv(gym.Env):
         terminated = raw["game_state"] != GAME_STATE_RUNNING
         if terminated:
             reward -= self.game_over_penalty
-        truncated = (not terminated) and self._steps >= self.max_steps
+        truncated = (not terminated) and self.max_steps is not None and self._steps >= self.max_steps
         self._prev = raw
         info = self._info(raw)
         info["crashed"] = crashed
