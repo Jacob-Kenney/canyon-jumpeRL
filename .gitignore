@@ -10,3 +10,4 @@ rom/*/build/
 # vendored by harbor/canyon-racer-task/sync.sh
 harbor/canyon-racer-task/environment/mcp-server/game/
 harbor/canyon-racer-task/tests/game/
+runs/
