@@ -3,3 +3,5 @@ FROM python:3.14-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git bash && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir mcp==2.3.0 numpy==2.5.4
 WORKDIR /app
+# Pre-trained PPO policy (numpy weights + a script that plays through the MCP server). Re-export with src/training/export_policy.py.
+COPY policy /opt/policy

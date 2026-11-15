@@ -1,10 +1,29 @@
-"""Play via MCP with the trained PPO policy (solution/policy.npz, exported by src/training/export_policy.py)."""
-import asyncio, os
+"""Play Canyon Racer through the MCP server with the pre-trained PPO policy (policy.npz next to this file).
+
+    python /opt/policy/ppo_play.py            # reset(seed 0) and play up to STEPS (default 1500) steps
+
+Deterministic: presses button i when the network's action mean for i is > 0. Needs only numpy + the `mcp` package.
+"""
+import asyncio, json, os
 import numpy as np
 from mcp.client.session import ClientSession
-from play import URL, STEPS, data, dec, http_client
+try:
+    from mcp.client.streamable_http import streamable_http_client as http_client
+except ImportError:
+    from mcp.client.streamable_http import streamablehttp_client as http_client
 
+URL = os.environ.get("MCP_URL", "http://mcp-server:8000/mcp")
+STEPS = int(os.environ.get("STEPS", 1500))
 W = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "policy.npz"))
+
+
+def data(res):
+    assert not res.is_error, res.content
+    return res.structured_content if res.structured_content is not None else json.loads(res.content[0].text)
+
+
+def dec(x):
+    return np.array(x["data"], dtype=x["dtype"]).reshape(x["shape"])
 
 
 def policy(obs):

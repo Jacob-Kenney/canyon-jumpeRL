@@ -1,6 +1,6 @@
 """Export a trained RLlib PPO checkpoint to a small numpy file the Harbor solution can run (no ray/torch needed).
 
-    uv run python src/training/export_policy.py runs/ppo harbor/canyon-racer-task/solution/policy.npz
+    uv run python src/training/export_policy.py runs/ppo harbor/canyon-racer-task/environment/policy/policy.npz
 
 The exported policy is deterministic: it presses button i when the Gaussian action mean for i is > 0 (RLlib maps the mean in [-1,1] to the env action (mean+1)/2).
 """

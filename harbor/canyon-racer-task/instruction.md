@@ -23,3 +23,8 @@ allowed but only your best episode counts.
 **Scoring:** the server records every action; the grader replays them in a fresh emulator and computes
 `reward = best_score`, the raw in-game score of your best run (10 points per obstacle cleared; no cap). Nothing else counts;
 there is nothing to write to disk.
+
+**Pre-trained policy:** the container ships a neural-network policy trained with PPO, at `/opt/policy`. `python /opt/policy/ppo_play.py`
+resets the game (seed 0) and plays up to 1500 steps through the MCP server, pressing buttons from the network's output. It is a good
+starting point: run it, read its final `info`, and use your remaining step budget (if any) as you see fit. You may also read
+`/opt/policy/ppo_play.py` and `policy.npz` to build on it. Note the 1500-step budget is shared, so running it once uses all of it.
